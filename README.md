@@ -1,0 +1,1 @@
+# qrbanerkajdasza.github.io
