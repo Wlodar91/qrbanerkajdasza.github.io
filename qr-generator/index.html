@@ -3,51 +3,54 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Generator QR do strony pośredniej</title>
+  <title>Generator QR</title>
   <style>
-    :root { font-family: Arial, sans-serif; color: #111827; background: #f9fafb; }
-    body { margin: 0; padding: 24px; }
-    .wrap { max-width: 760px; margin: 0 auto; background: white; border-radius: 18px; padding: 28px; box-shadow: 0 10px 30px rgba(0,0,0,.08); }
+    body { margin: 0; padding: 24px; font-family: Arial, sans-serif; background: #f9fafb; color: #111827; }
+    .wrap { max-width: 760px; margin: 0 auto; background: #fff; border-radius: 18px; padding: 28px; box-shadow: 0 10px 30px rgba(0,0,0,.08); }
     h1 { margin-top: 0; font-size: 26px; }
     label { display: block; font-weight: 700; margin: 18px 0 8px; }
     input { width: 100%; box-sizing: border-box; padding: 13px 14px; border-radius: 10px; border: 1px solid #d1d5db; font-size: 16px; }
     button, a.download { display: inline-block; border: 0; margin: 12px 8px 0 0; padding: 12px 16px; border-radius: 10px; background: #111827; color: white; font-weight: 700; text-decoration: none; cursor: pointer; }
-    button.secondary, a.secondary { background: #374151; }
-    #qrcode { margin-top: 24px; padding: 16px; border: 1px dashed #d1d5db; border-radius: 14px; display: inline-block; background: white; }
+    .secondary { background: #374151 !important; }
+    #qrcode { margin-top: 24px; padding: 16px; border: 1px dashed #d1d5db; border-radius: 14px; display: none; background: white; }
+    #qrcode img { width: 280px; height: 280px; display: block; }
     .hint { color: #6b7280; line-height: 1.5; }
     .error { color: #b91c1c; font-weight: 700; }
-    code { background: #f3f4f6; padding: 2px 5px; border-radius: 5px; }
   </style>
 </head>
 <body>
   <main class="wrap">
     <h1>Generator QR</h1>
+
     <p class="hint">
-      Tutaj generujesz QR do <strong>strony pośredniej na hostingu</strong>, a nie bezpośrednio do Otodom.
-      Dzięki temu później możesz zmieniać link Otodom bez drukowania nowego QR.
+      Tutaj generujesz QR do strony pośredniej, a nie bezpośrednio do Otodom.
     </p>
 
     <label for="urlInput">Link do zakodowania w QR</label>
-    <input id="urlInput" placeholder="https://twoja-oferta.netlify.app" />
+    <input id="urlInput" value="https://wlodar91.github.io/qrbanerkajdasza.github.io/" />
 
     <button id="generateBtn">Generuj QR</button>
     <button id="clearBtn" class="secondary">Wyczyść</button>
 
     <p id="message" class="hint"></p>
-    <div id="qrcode"></div>
+
+    <div id="qrcode">
+      <img id="qrImage" alt="Kod QR" />
+    </div>
+
     <div id="downloads"></div>
 
     <p class="hint">
-      Do druku najlepiej pobrać <strong>SVG</strong>. Do szybkiego użycia w grafice lub dokumencie wystarczy <strong>PNG</strong>.
+      Do druku najlepiej pobrać SVG. Do szybkiego użycia wystarczy PNG.
     </p>
   </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <script>
     const urlInput = document.getElementById("urlInput");
     const generateBtn = document.getElementById("generateBtn");
     const clearBtn = document.getElementById("clearBtn");
     const qrcode = document.getElementById("qrcode");
+    const qrImage = document.getElementById("qrImage");
     const downloads = document.getElementById("downloads");
     const message = document.getElementById("message");
 
@@ -60,18 +63,10 @@
       }
     }
 
-    function makeDownloadLink(blob, filename, text, className = "download") {
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = filename;
-      a.textContent = text;
-      a.className = className;
-      return a;
-    }
-
-    async function generateQr() {
+    function generateQr() {
       const value = urlInput.value.trim();
-      qrcode.innerHTML = "";
+
+      qrcode.style.display = "none";
       downloads.innerHTML = "";
       message.textContent = "";
       message.className = "hint";
@@ -82,41 +77,38 @@
         return;
       }
 
-      try {
-        const canvas = document.createElement("canvas");
-        await QRCode.toCanvas(canvas, value, {
-          width: 1024,
-          margin: 2,
-          errorCorrectionLevel: "H"
-        });
-        canvas.style.width = "280px";
-        canvas.style.height = "280px";
-        qrcode.appendChild(canvas);
+      const encoded = encodeURIComponent(value);
 
-        const pngBlob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
-        const pngLink = makeDownloadLink(pngBlob, "qr-oferta.png", "Pobierz PNG");
-        downloads.appendChild(pngLink);
+      const pngUrl = `https://api.qrserver.com/v1/create-qr-code/?size=1024x1024&format=png&margin=20&data=${encoded}`;
+      const svgUrl = `https://api.qrserver.com/v1/create-qr-code/?size=1024x1024&format=svg&margin=20&data=${encoded}`;
 
-        const svgText = await QRCode.toString(value, {
-          type: "svg",
-          margin: 2,
-          errorCorrectionLevel: "H"
-        });
-        const svgBlob = new Blob([svgText], { type: "image/svg+xml" });
-        const svgLink = makeDownloadLink(svgBlob, "qr-oferta.svg", "Pobierz SVG", "download secondary");
-        downloads.appendChild(svgLink);
+      qrImage.src = pngUrl;
+      qrcode.style.display = "inline-block";
 
-        message.textContent = "QR wygenerowany. Przed drukiem zeskanuj go telefonem i sprawdź, czy prowadzi do oferty.";
-      } catch (error) {
-        message.textContent = "Nie udało się wygenerować QR. Sprawdź połączenie z internetem — generator korzysta z biblioteki QR ładowanej z CDN.";
-        message.className = "error";
-      }
+      const pngLink = document.createElement("a");
+      pngLink.href = pngUrl;
+      pngLink.target = "_blank";
+      pngLink.className = "download";
+      pngLink.textContent = "Pobierz PNG";
+
+      const svgLink = document.createElement("a");
+      svgLink.href = svgUrl;
+      svgLink.target = "_blank";
+      svgLink.className = "download secondary";
+      svgLink.textContent = "Pobierz SVG";
+
+      downloads.appendChild(pngLink);
+      downloads.appendChild(svgLink);
+
+      message.textContent = "QR wygenerowany. Zeskanuj go telefonem przed drukiem.";
     }
 
     generateBtn.addEventListener("click", generateQr);
+
     clearBtn.addEventListener("click", function () {
       urlInput.value = "";
-      qrcode.innerHTML = "";
+      qrcode.style.display = "none";
+      qrImage.src = "";
       downloads.innerHTML = "";
       message.textContent = "";
     });
