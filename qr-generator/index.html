@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Generator QR do strony pośredniej</title>
+  <style>
+    :root { font-family: Arial, sans-serif; color: #111827; background: #f9fafb; }
+    body { margin: 0; padding: 24px; }
+    .wrap { max-width: 760px; margin: 0 auto; background: white; border-radius: 18px; padding: 28px; box-shadow: 0 10px 30px rgba(0,0,0,.08); }
+    h1 { margin-top: 0; font-size: 26px; }
+    label { display: block; font-weight: 700; margin: 18px 0 8px; }
+    input { width: 100%; box-sizing: border-box; padding: 13px 14px; border-radius: 10px; border: 1px solid #d1d5db; font-size: 16px; }
+    button, a.download { display: inline-block; border: 0; margin: 12px 8px 0 0; padding: 12px 16px; border-radius: 10px; background: #111827; color: white; font-weight: 700; text-decoration: none; cursor: pointer; }
+    button.secondary, a.secondary { background: #374151; }
+    #qrcode { margin-top: 24px; padding: 16px; border: 1px dashed #d1d5db; border-radius: 14px; display: inline-block; background: white; }
+    .hint { color: #6b7280; line-height: 1.5; }
+    .error { color: #b91c1c; font-weight: 700; }
+    code { background: #f3f4f6; padding: 2px 5px; border-radius: 5px; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <h1>Generator QR</h1>
+    <p class="hint">
+      Tutaj generujesz QR do <strong>strony pośredniej na hostingu</strong>, a nie bezpośrednio do Otodom.
+      Dzięki temu później możesz zmieniać link Otodom bez drukowania nowego QR.
+    </p>
+
+    <label for="urlInput">Link do zakodowania w QR</label>
+    <input id="urlInput" placeholder="https://twoja-oferta.netlify.app" />
+
+    <button id="generateBtn">Generuj QR</button>
+    <button id="clearBtn" class="secondary">Wyczyść</button>
+
+    <p id="message" class="hint"></p>
+    <div id="qrcode"></div>
+    <div id="downloads"></div>
+
+    <p class="hint">
+      Do druku najlepiej pobrać <strong>SVG</strong>. Do szybkiego użycia w grafice lub dokumencie wystarczy <strong>PNG</strong>.
+    </p>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+  <script>
+    const urlInput = document.getElementById("urlInput");
+    const generateBtn = document.getElementById("generateBtn");
+    const clearBtn = document.getElementById("clearBtn");
+    const qrcode = document.getElementById("qrcode");
+    const downloads = document.getElementById("downloads");
+    const message = document.getElementById("message");
+
+    function isValidHttpUrl(value) {
+      try {
+        const url = new URL(value);
+        return url.protocol === "http:" || url.protocol === "https:";
+      } catch (_) {
+        return false;
+      }
+    }
+
+    function makeDownloadLink(blob, filename, text, className = "download") {
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.textContent = text;
+      a.className = className;
+      return a;
+    }
+
+    async function generateQr() {
+      const value = urlInput.value.trim();
+      qrcode.innerHTML = "";
+      downloads.innerHTML = "";
+      message.textContent = "";
+      message.className = "hint";
+
+      if (!isValidHttpUrl(value)) {
+        message.textContent = "Wpisz poprawny link zaczynający się od https:// lub http://";
+        message.className = "error";
+        return;
+      }
+
+      try {
+        const canvas = document.createElement("canvas");
+        await QRCode.toCanvas(canvas, value, {
+          width: 1024,
+          margin: 2,
+          errorCorrectionLevel: "H"
+        });
+        canvas.style.width = "280px";
+        canvas.style.height = "280px";
+        qrcode.appendChild(canvas);
+
+        const pngBlob = await new Promise(resolve => canvas.toBlob(resolve, "image/png"));
+        const pngLink = makeDownloadLink(pngBlob, "qr-oferta.png", "Pobierz PNG");
+        downloads.appendChild(pngLink);
+
+        const svgText = await QRCode.toString(value, {
+          type: "svg",
+          margin: 2,
+          errorCorrectionLevel: "H"
+        });
+        const svgBlob = new Blob([svgText], { type: "image/svg+xml" });
+        const svgLink = makeDownloadLink(svgBlob, "qr-oferta.svg", "Pobierz SVG", "download secondary");
+        downloads.appendChild(svgLink);
+
+        message.textContent = "QR wygenerowany. Przed drukiem zeskanuj go telefonem i sprawdź, czy prowadzi do oferty.";
+      } catch (error) {
+        message.textContent = "Nie udało się wygenerować QR. Sprawdź połączenie z internetem — generator korzysta z biblioteki QR ładowanej z CDN.";
+        message.className = "error";
+      }
+    }
+
+    generateBtn.addEventListener("click", generateQr);
+    clearBtn.addEventListener("click", function () {
+      urlInput.value = "";
+      qrcode.innerHTML = "";
+      downloads.innerHTML = "";
+      message.textContent = "";
+    });
+
+    urlInput.addEventListener("keydown", function (event) {
+      if (event.key === "Enter") generateQr();
+    });
+  </script>
+</body>
+</html>

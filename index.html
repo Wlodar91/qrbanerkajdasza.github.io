@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Przekierowanie do oferty</title>
+  <style>
+    :root { font-family: Arial, sans-serif; color: #1f2937; background: #f9fafb; }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+    .card { max-width: 520px; background: white; padding: 28px; border-radius: 18px; box-shadow: 0 10px 30px rgba(0,0,0,.08); text-align: center; }
+    h1 { font-size: 22px; margin: 0 0 12px; }
+    p { line-height: 1.5; margin: 8px 0; }
+    a.button { display: inline-block; margin-top: 18px; padding: 12px 18px; border-radius: 10px; background: #111827; color: white; text-decoration: none; font-weight: 700; }
+    .small { color: #6b7280; font-size: 13px; word-break: break-word; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>Przekierowujemy do aktualnej oferty</h1>
+    <p>Za chwilę nastąpi automatyczne przejście do ogłoszenia.</p>
+    <p class="small" id="targetPreview"></p>
+    <a class="button" id="manualLink" href="#">Przejdź do oferty</a>
+  </main>
+
+  <script src="./config.js"></script>
+  <script>
+    (function () {
+      const config = window.REDIRECT_CONFIG || {};
+      const targetUrl = config.targetUrl;
+      const delayMs = Number(config.delayMs || 0);
+      const useReplace = Boolean(config.useReplace);
+
+      const manualLink = document.getElementById("manualLink");
+      const targetPreview = document.getElementById("targetPreview");
+
+      function isValidHttpUrl(value) {
+        try {
+          const url = new URL(value);
+          return url.protocol === "http:" || url.protocol === "https:";
+        } catch (_) {
+          return false;
+        }
+      }
+
+      if (!isValidHttpUrl(targetUrl)) {
+        targetPreview.textContent = "Brak poprawnego linku docelowego. Podmień targetUrl w pliku config.js.";
+        manualLink.style.display = "none";
+        return;
+      }
+
+      manualLink.href = targetUrl;
+      targetPreview.textContent = targetUrl;
+
+      window.setTimeout(function () {
+        if (useReplace) {
+          window.location.replace(targetUrl);
+        } else {
+          window.location.href = targetUrl;
+        }
+      }, delayMs);
+    })();
+  </script>
+</body>
+</html>
