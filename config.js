@@ -5,7 +5,7 @@
 // To jest jedyne miejsce, które zwykle trzeba zmienić.
 
 window.REDIRECT_CONFIG = {
-  targetUrl: "https://www.otodom.pl/pl/oferta/apartament-83-m-zielony-taras-na-dachu-80-m-bezposrednio-ID4AOkB",
+  targetUrl: "https://www.otodom.pl/pl/oferta/apartament-83-m-zielony-taras-z-trawa-na-dachu-80-m-od-wlasciciela-ID4C81r",
 
   // Zalecane: false
   // false = użytkownik może użyć przycisku „wstecz” i wrócić z Otodom
